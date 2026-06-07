@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>종합과정 학습홈 프로토타입</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; background: #f4f5f7; color: #1a1a2e; -webkit-font-smoothing: antialiased; }
+  #root { max-width: 1320px; margin: 0 auto; padding: 24px 20px 60px; }
+  .back { font-size: 13px; color: #555; margin-bottom: 8px; cursor: pointer; }
+  .page-title { font-size: 21px; font-weight: 800; margin-bottom: 18px; }
+
+  /* 종합 배너 (이미지 구조: 헤더 + 카드 내장 일체형) */
+  .pkg-banner { background: linear-gradient(180deg,#0a0f24,#0d1430); color:#fff; border-radius:18px; padding:20px 22px 18px; margin-bottom:16px; }
+  .pkg-head { display:flex; justify-content:space-between; align-items:flex-start; }
+  .pkg-head-left { flex:1; }
+  .pkg-top { display:flex; align-items:center; gap:8px; margin-bottom:9px; font-size:13px; }
+  .pkg-dday { font-weight:800; color:#fff; }
+  /* 종합과정 상태 라벨 (상단) */
+  .pkg-state-lbl { font-weight:700; font-size:12px; padding:3px 11px; border-radius:8px; }
+  .pkg-state-lbl.ing { background:#1f4fd0; color:#fff; }
+  .pkg-state-lbl.soon { background:rgba(255,255,255,.16); color:#cfd5ee; }
+  .pkg-state-lbl.ended { background:rgba(255,255,255,.1); color:#9aa3c4; }
+  /* 종료일 텍스트 (메타 행, 볼드 해제) */
+  .pkg-endtext { font-weight:400; color:#aeb6e0; }
+  .pkg-sub { color:#9aa3c4; }
+  .pkg-name { font-size:26px; font-weight:800; margin-bottom:11px; letter-spacing:-0.5px; }
+  .pkg-metarow { display:flex; justify-content:space-between; align-items:center; }
+  .pkg-meta { display:flex; align-items:center; gap:14px; font-size:12px; color:#aeb6e0; }
+  .pkg-meta span { display:flex; align-items:center; gap:5px; }
+  .pkg-nav { display:flex; gap:8px; }
+  .nav-btn { width:32px; height:32px; border-radius:50%; border:1px solid rgba(255,255,255,.25); background:transparent; color:#cfd5ee; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .nav-btn:hover { background:rgba(255,255,255,.08); }
+  .nav-btn:disabled { opacity:.3; cursor:default; }
+
+  /* 배너 내장 카드 행 (스크롤 제거, 화살표 페이지네이션) */
+  .card-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-top:14px; }
+  .course-card { background:#141a35; border:1px solid #232b50; border-radius:12px; padding:14px 14px 12px; cursor:pointer; position:relative; transition: background .25s ease, border-color .25s ease, box-shadow .25s ease, opacity .25s ease; }
+  .course-card .cc-name, .course-card .lbl, .course-card .cc-prog, .course-card .cc-prog > i { transition: background .25s ease, color .25s ease; }
+  .course-card:hover { border-color:#3a4680; }
+  .course-card.selected { background:#fff; border-color:#fff; }
+  .course-card.dimmed { opacity:.55; }
+  .cc-dday { font-size:11px; font-weight:700; color:#9aa3c4; margin-bottom:8px; }
+  .course-card.selected .cc-dday { color:#3b5bff; }
+  .cc-body { display:flex; gap:11px; align-items:flex-start; }
+  .cc-textcol { flex:1; min-width:0; }
+  .cc-name { font-size:14px; font-weight:700; line-height:1.4; color:#fff; margin-bottom:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .course-card.selected .cc-name { color:#1a1a2e; }
+  .cc-thumb { width:74px; height:52px; border-radius:8px; background:#2a3360; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-size:10px; color:#7a86c0; overflow:hidden; }
+  .cc-prog { height:5px; background:rgba(255,255,255,.15); border-radius:3px; overflow:hidden; }
+  .course-card.selected .cc-prog { background:#e6e9f2; }
+  .cc-prog > i { display:block; height:100%; background:#3b5bff; border-radius:3px; }
+  .cc-labels { display:flex; gap:5px; margin-bottom:10px; flex-wrap:wrap; }
+  .lbl { font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; }
+  /* 구분(필수/자율) */
+  .lbl-cat.req { background:rgba(91,140,255,.22); color:#9bb5ff; }
+  .lbl-cat.opt { background:rgba(255,255,255,.12); color:#aeb6e0; }
+  /* 학습상태 */
+  .lbl-learn { background:rgba(255,255,255,.14); color:#cfd5ee; }
+  .lbl-learn.learning { background:#1f4fd0; color:#fff; }
+  .lbl-learn.done, .lbl-learn.fail { background:rgba(255,255,255,.1); color:#9aa3c4; }
+  .lbl-learn.soon { background:rgba(255,255,255,.16); color:#cfd5ee; }
+  .lbl-learn.review { background:rgba(91,140,255,.22); color:#9bb5ff; }
+  /* 수료여부 */
+  .lbl-pass.pass { background:#16a35a; color:#fff; }
+  .lbl-pass.fail { background:rgba(227,68,68,.22); color:#ff9b9b; }
+  /* 선택(흰 배경) 카드용 */
+  .course-card.selected .lbl-cat.req { background:#eaf0ff; color:#3b5bff; }
+  .course-card.selected .lbl-cat.opt { background:#f0f0f3; color:#888; }
+  .course-card.selected .lbl-learn { background:#eef0f3; color:#666; }
+  .course-card.selected .lbl-learn.learning { background:#1f4fd0; color:#fff; }
+  .course-card.selected .lbl-learn.review { background:#eaf0ff; color:#3b5bff; }
+  .course-card.selected .lbl-pass.fail { background:#ffeaea; color:#e34; }
+
+  /* 선택 과정 본문 (전체 흰색 단일 영역) */
+  .course-body { margin-top:18px; background:#fff; border-radius:16px; padding:24px 26px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+  /* 상세 헤더 (흰색 — 배경 분리 없음) */
+  .cb-banner { background:#fff; color:#1a1a2e; padding:0 0 20px; display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid #f0f0f3; }
+  .cb-banner-info { flex:1; }
+  .cb-state-tags { display:flex; gap:6px; margin-bottom:12px; }
+  .cb-state-tags .tag { font-size:11px; font-weight:700; padding:3px 10px; border-radius:6px; }
+  .tag-learn.learning { background:#1f4fd0; color:#fff; }
+  .tag-learn.done, .tag-learn.fail { background:#eef0f3; color:#666; }
+  .tag-learn.review { background:#eaf0ff; color:#3b5bff; }
+  .tag-pass.pass { background:#16a35a; color:#fff; }
+  .tag-pass.fail { background:#ffeaea; color:#e34; }
+  .cb-name { font-size:21px; font-weight:800; margin-bottom:14px; color:#1a1a2e; }
+  .cb-periods { font-size:13px; color:#777; }
+  .cb-prow { display:flex; align-items:center; gap:14px; margin-bottom:5px; }
+  .cb-plabel { color:#999; min-width:54px; }
+  .cb-dday { background:#eaf0ff; color:#3b5bff; font-size:11px; font-weight:700; padding:1px 8px; border-radius:5px; }
+  .cb-thumb { width:230px; height:120px; background:#2bb8c4; border-radius:10px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; margin-left:18px; }
+
+  /* 채널 박스 (분리) */
+  .cb-channel { display:flex; justify-content:space-between; align-items:center; padding:16px 0; font-size:14px; border-bottom:1px solid #f0f0f3; }
+  .cb-channel .left { display:flex; align-items:center; gap:9px; font-weight:600; color:#333; }
+  .cb-channel .ch-ico { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,#cfd5e8,#9aa3c4); display:inline-block; }
+  .cb-channel .right { color:#666; display:flex; gap:20px; }
+
+  /* 학습현황 */
+  .cb-sec-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:13px; }
+  .cb-sec-head h4 { font-size:17px; font-weight:800; }
+  .cb-sec-head .more { font-size:13px; color:#888; cursor:pointer; }
+  .cb-status { margin-top:22px; }
+  .status-grid { display:flex; gap:16px; }
+  .stat-box { flex:1; background:#f5f6f8; border-radius:14px; padding:22px 24px; }
+  .stat-box .t { font-size:15px; font-weight:700; margin-bottom:16px; }
+  .score-row { display:flex; justify-content:space-between; align-items:center; }
+  .stat-box .big { font-size:30px; font-weight:800; color:#2a6df5; }
+  .stat-box .unit { font-size:14px; color:#555; font-weight:600; }
+  .stat-box .crit { font-size:12px; color:#999; margin-top:6px; }
+  .score-bars { display:flex; align-items:flex-end; gap:18px; height:74px; padding-right:8px; }
+  .score-bars .bar { width:54px; border-radius:8px 8px 0 0; }
+  .score-bars .bar-crit { height:64px; background:#d6dae2; }
+  .score-bars .bar-mine { height:30px; background:#2a6df5; }
+  .donut { position:relative; width:74px; height:74px; border-radius:50%; background:conic-gradient(#2a6df5 calc(var(--pct)*1%), #e3e6ec 0); display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .donut::before { content:''; position:absolute; width:54px; height:54px; border-radius:50%; background:#f5f6f8; }
+  .donut span { position:relative; font-size:13px; font-weight:800; color:#2a6df5; }
+
+  /* 학습목록 트리 */
+  .cb-list { margin-top:24px; }
+  .eval-item { border:1px solid #eef0f3; border-radius:12px; overflow:hidden; }
+  .eval-head { display:flex; align-items:center; gap:9px; padding:15px 18px; background:#fafbfc; border-bottom:1px solid #eef0f3; }
+  .li-badge { font-size:11px; font-weight:700; color:#2a6df5; }
+  .li-badge.opt { color:#999; }
+  .li-name { font-size:14px; font-weight:700; }
+  .eval-prog { margin-left:auto; font-size:12px; color:#888; }
+  .eval-prog b { color:#e34; font-size:13px; margin-left:4px; }
+  .tree { padding:6px 0; }
+  .t-grp { padding:11px 18px; font-size:13px; font-weight:600; }
+  .t-sub { padding:9px 18px 9px 34px; font-size:13px; color:#555; }
+  .cnt { color:#aaa; font-weight:400; margin-left:4px; }
+  .content-row { display:flex; align-items:center; gap:12px; padding:13px 18px 13px 50px; }
+  .c-ico { width:34px; height:34px; border-radius:8px; background:#e8f0ff; color:#2a6df5; display:flex; align-items:center; justify-content:center; font-size:12px; flex:0 0 auto; }
+  .c-info { flex:1; }
+  .c-name { font-size:14px; font-weight:600; }
+  .c-need { color:#2a6df5; font-size:12px; font-weight:700; margin-left:6px; }
+  .c-meta { font-size:12px; color:#999; margin-top:3px; }
+  .c-btn { background:#2a6df5; color:#fff; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; }
+  .c-btn.wait { background:#e3e6ec; color:#999; cursor:default; }
+
+  .locked-note { padding:38px 22px; text-align:center; color:#999; font-size:13px; }
+
+  /* 학습현황 상세 패널 (우측 push) */
+  .layout { display:flex; gap:0; align-items:flex-start; }
+  .main-col { flex:1; min-width:0; transition:all .3s ease; }
+  .detail-panel { flex:0 0 420px; width:420px; align-self:stretch; background:#fff; border-left:1px solid #eef0f3; box-shadow:-4px 0 16px rgba(0,0,0,.06); padding:26px 28px; margin-left:20px; border-radius:14px; }
+  .dp-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+  .dp-head h3 { font-size:19px; font-weight:800; }
+  .dp-close { background:none; border:none; font-size:24px; color:#888; cursor:pointer; }
+  .dp-top { display:flex; gap:12px; margin-bottom:18px; }
+  .dp-box { flex:1; background:#f5f6f8; border-radius:12px; padding:16px; text-align:center; }
+  .dp-box .l { font-size:12px; color:#999; margin-bottom:8px; }
+  .dp-box .v { font-size:18px; font-weight:800; color:#1a1a2e; }
+  .dp-box .v small { font-size:12px; font-weight:600; color:#666; }
+  .dp-prog-box { border:1px solid #eef0f3; border-radius:12px; padding:16px 18px; margin-bottom:12px; }
+  .dp-prog-title { font-size:14px; font-weight:700; margin-bottom:12px; }
+  .dp-prog-title span { color:#999; font-weight:500; font-size:12px; margin-left:4px; }
+  .dp-bar { height:8px; border-radius:4px; background:#dbe4ff; overflow:hidden; display:flex; }
+  .dp-bar i { display:block; height:100%; }
+  .dp-bar i.done { background:#2a6df5; }
+  .dp-bar i.ing { background:#7ea6ff; }
+  .dp-bar-foot { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
+  .dp-bar-foot b { color:#2a6df5; font-size:15px; }
+  .dp-bar-foot span { font-size:12px; color:#999; }
+  .dp-sec { font-size:15px; font-weight:800; margin:22px 0 12px; }
+  .dp-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .dp-table th { background:#f5f6f8; color:#888; font-weight:600; padding:11px 8px; text-align:left; font-size:12px; }
+  .dp-table td { padding:14px 8px; border-bottom:1px solid #f0f0f3; color:#444; }
+  .dp-table .hl-rate { color:#2a6df5; font-weight:700; }
+  .dp-table .hl-score { color:#e34; font-weight:700; }
+  .dp-table .dp-total td { background:#fafbfc; font-weight:800; color:#1a1a2e; border-bottom:none; }
+
+  /* 종합 수료 안내 문구 */
+  .pkg-guide { font-weight:400; color:#9bb5ff; font-size:13px; }
+  .pkg-guide.ok { color:#7ee0a0; }
+  .pkg-guide.danger { color:#ff7a7a; }
+  /* 수료확정 후 라벨 형태 */
+  .pkg-guide.as-label { padding:3px 12px; border-radius:8px; font-size:12px; font-weight:700; }
+  .pkg-guide.as-label.ok { background:#16a35a; color:#fff; }
+  .pkg-guide.as-label.danger { background:#e34; color:#fff; }
+
+  /* 과정별 현황표 패널 (우측 슬라이드) */
+  .panel-dim { position:fixed; inset:0; background:rgba(10,15,36,.45); z-index:50; }
+  .panel { position:fixed; top:0; right:0; width:440px; max-width:92vw; height:100%; background:#fff; z-index:51; box-shadow:-6px 0 24px rgba(0,0,0,.18); padding:22px 22px 30px; overflow-y:auto; }
+  .panel-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .panel-head h3 { font-size:16px; font-weight:800; }
+  .panel-close { font-size:20px; color:#888; cursor:pointer; background:none; border:none; }
+  .panel-summary { display:flex; gap:10px; margin-bottom:18px; }
+  .psum { flex:1; background:#f7f8fa; border-radius:10px; padding:12px; text-align:center; }
+  .psum .l { font-size:11px; color:#888; margin-bottom:5px; }
+  .psum .v { font-size:16px; font-weight:800; }
+  .psum .v.em { color:#3b5bff; }
+  .psum .v.ok { color:#16a35a; }
+  .psum .v.danger { color:#e34; }
+  .ptable { width:100%; border-collapse:collapse; font-size:12px; }
+  .ptable th { text-align:left; color:#888; font-weight:600; padding:8px 6px; border-bottom:1px solid #eef0f3; font-size:11px; }
+  .ptable td { padding:11px 6px; border-bottom:1px solid #f4f5f7; vertical-align:middle; }
+  .ptable tr.is-sel td { background:#f5f8ff; }
+  .ptable .pt-name { font-weight:600; color:#1a1a2e; cursor:pointer; }
+  .ptable .pt-name:hover { color:#3b5bff; }
+  .pt-req { font-size:10px; font-weight:700; padding:1px 6px; border-radius:4px; background:#eaf0ff; color:#3b5bff; }
+  .pt-opt { font-size:10px; font-weight:700; padding:1px 6px; border-radius:4px; background:#f0f0f3; color:#999; }
+  .pt-state { font-size:11px; font-weight:700; }
+  .pt-state.learning { color:#1f7ae0; }
+  .pt-state.done { color:#16a35a; }
+  .pt-state.fail { color:#e34; }
+  .pt-state.soon { color:#c47f00; }
+  .pt-total { font-weight:800; }
+  .pt-total td { border-top:2px solid #e6e9f2; border-bottom:none; padding-top:13px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+// 데모 데이터 — 종합과정에 포함된 단과(상품)들
+const COURSES = [
+  { id:'c1', name:'문제 해결을 위한 프로세스', required:true, state:'done',
+    period:'2025.03.01 ~ 2025.06.30', review_period:'2025.07.01 ~ 2026.06.30', dday:null, progress:100, score:'88', crit:'80',
+    channel:12, content:'전체 18개', required_cnt:'5/5' },
+  { id:'c2', name:'괴테, 문학을 넘어 삶을 말하다', required:true, state:'learning',
+    period:'2025.05.01 ~ 2025.12.31', review_period:'2026.01.01 ~ 2026.12.31', dday:'D-14', progress:82, score:'77.5', crit:'80',
+    channel:17, content:'전체 20개', required_cnt:'4/5' },
+  { id:'c3', name:'이것은 작은 브랜드를 위한 책', required:false, state:'fail',
+    period:'2025.06.01 ~ 2025.10.31', review_period:'2025.11.01 ~ 2026.12.31', dday:'종료', progress:35, score:'-', crit:'80',
+    channel:3, content:'전체 12개', required_cnt:'-' },
+  { id:'c4', name:'리더십 패러독스: 당신이 알던 리더십은 끝났다', required:true, state:'soon',
+    period:'2026.01.01 ~ 2026.06.30', review_period:'2026.07.01 ~ 2027.12.31', dday:'시작 전', progress:0, score:'-', crit:'80',
+    channel:0, content:'전체 15개', required_cnt:'0/5' },
+  { id:'c5', name:'리더십 실전 워크숍 (집합교육)', required:true, state:'learning', offline:true, sessions:5,
+    attend_done:3, attend_req:5, round_done:3, round_total:5,
+    period:'2025.05.01 ~ 2025.12.31', review_period:'2026.01.01 ~ 2026.12.31', dday:'D-30', progress:45, score:'-', crit:'80',
+    channel:5, content:'전체 14개', required_cnt:'1/1' },
+];
+
+const STATE_META = {
+  learning:{ label:'학습중', cls:'state-learning' },
+  done:{ label:'수료', cls:'state-done' },
+  fail:{ label:'미수료', cls:'state-fail' },
+  soon:{ label:'학습예정', cls:'state-soon' },
+  review:{ label:'복습', cls:'state-review' },
+};
+
+function CourseCard({ c, selected, onSelect }) {
+  const learnState = c.state==='soon' ? '예정'
+                   : c.state==='learning' ? '학습중'
+                   : '종료';  // done·fail·review = 학습기간 종료
+  const passState = c.state==='done' ? '수료'
+                  : c.state==='fail' ? '미수료'
+                  : c.state==='review' ? '수료'  // 종료 + 수료(복습기간)
+                  : null;  // 학습중·예정은 수료여부 미확정 → 라벨 없음
+  return (
+    <div className={`course-card ${selected?'selected':''}`}
+         onClick={()=> onSelect(c.id)}>
+      <div className="cc-labels">
+        <span className={`lbl lbl-cat ${c.required?'req':'opt'}`}>{c.required?'필수':'자율'}</span>
+        <span className={`lbl lbl-learn ${c.state}`}>{learnState}</span>
+        {passState && <span className={`lbl lbl-pass ${passState==='수료'?'pass':'fail'}`}>{passState}</span>}
+      </div>
+      <div className="cc-body">
+        <div className="cc-textcol">
+          <div className="cc-name">{c.name}</div>
+          <div className="cc-prog"><i style={{width:`${c.progress}%`}}></i></div>
+        </div>
+        <div className="cc-thumb">썸네일</div>
+      </div>
+    </div>
+  );
+}
+
+function CourseBody({ c, onOpenDetail }) {
+  const cbLearn = c.state==='soon' ? '예정'
+                : c.state==='learning' ? '학습중'
+                : '종료';  // done·fail·review = 학습기간 종료
+  const cbPass = c.state==='done' ? '수료' : c.state==='fail' ? '미수료' : c.state==='review' ? '수료' : null;
+  const isPending = c.state==='soon'; // 학습예정: 콘텐츠 버튼만 학습대기로
+  return (
+    <div className="course-body">
+      {/* 상세 헤더 */}
+      <div className="cb-banner">
+        <div className="cb-banner-info">
+          <div className="cb-state-tags">
+            <span className={`tag tag-learn ${c.state}`}>{cbLearn}</span>
+            {cbPass && <span className={`tag tag-pass ${cbPass==='수료'?'pass':'fail'}`}>{cbPass}</span>}
+          </div>
+          <div className="cb-name">{c.name}</div>
+          <div className="cb-periods">
+            <div className="cb-prow"><span className="cb-plabel">학습기간</span><span>{c.period}</span>{c.dday && <span className="cb-dday">{c.dday}</span>}</div>
+            <div className="cb-prow"><span className="cb-plabel">복습기간</span><span>{c.review_period || '-'}</span></div>
+          </div>
+        </div>
+        <div className="cb-thumb">과정 배너</div>
+      </div>
+
+      {/* 채널 / 공지 / 자료실 (별도 박스) */}
+      <div className="cb-channel">
+        <div className="left"><span className="ch-ico"></span>채널 새글 ›</div>
+        <div className="right"><span>공지사항 ›</span><span>자료실 ›</span></div>
+      </div>
+
+      {/* 학습현황 */}
+      <div className="cb-status">
+        <div className="cb-sec-head"><h4>학습현황</h4><span className="more" onClick={onOpenDetail}>상세보기 ›</span></div>
+        <div className="status-grid">
+          {c.offline ? (
+          <>
+          <div className="stat-box">
+            <div className="t">출석 현황</div>
+            <div className="score-row">
+              <div><span className="big">{c.attend_done}</span><span className="unit"> / {c.attend_req}회 출석</span></div>
+              <div className="score-bars">
+                <div className="bar bar-crit" style={{height:'64px'}}></div>
+                <div className="bar bar-mine" style={{height:`${Math.max(8, c.attend_done/c.attend_req*64)}px`}}></div>
+              </div>
+            </div>
+            <div className="crit">수료기준 {c.attend_req}회 이상 출석</div>
+          </div>
+          <div className="stat-box">
+            <div className="t">필수 평가항목</div>
+            <div className="score-row">
+              <div><span className="big">{c.required_cnt==='-'?'0':c.required_cnt.split('/')[0]}</span><span className="unit"> 개 달성</span>
+                   <div className="crit" style={{marginTop:6}}>전체 개수 {c.required_cnt==='-'?'1':c.required_cnt.split('/')[1]}개</div></div>
+              <div className="donut" style={{'--pct': c.required_cnt==='-'?0:(parseInt(c.required_cnt)/parseInt(c.required_cnt.split('/')[1])*100)}}>
+                <span>{c.required_cnt==='-'?'0/1':c.required_cnt}</span>
+              </div>
+            </div>
+          </div>
+          </>
+          ) : (
+          <>
+          <div className="stat-box">
+            <div className="t">나의 점수</div>
+            <div className="score-row">
+              <div><span className="big">{c.score==='-'?'0':c.score}</span><span className="unit"> 점</span></div>
+              <div className="score-bars"><div className="bar bar-crit"></div><div className="bar bar-mine"></div></div>
+            </div>
+            <div className="crit">수료기준 {c.crit}점</div>
+          </div>
+          <div className="stat-box">
+            <div className="t">필수 평가항목</div>
+            <div className="score-row">
+              <div><span className="big">{c.required_cnt==='-'?'0':c.required_cnt.split('/')[0]}</span><span className="unit"> 개 달성</span>
+                   <div className="crit" style={{marginTop:6}}>전체 개수 {c.required_cnt==='-'?'1':c.required_cnt.split('/')[1]}개</div></div>
+              <div className="donut" style={{'--pct': c.required_cnt==='-'?0:(parseInt(c.required_cnt)/parseInt(c.required_cnt.split('/')[1])*100)}}>
+                <span>{c.required_cnt==='-'?'0/1':c.required_cnt}</span>
+              </div>
+            </div>
+          </div>
+          </>
+          )}
+        </div>
+      </div>
+
+      {/* 학습목록 트리 */}
+      <div className="cb-list">
+        <div className="cb-sec-head"><h4>학습목록</h4><span className="more">필수 콘텐츠 ▾</span></div>
+        <div className="eval-item">
+          <div className="eval-head">
+            <span className="li-badge">필수평가</span><span className="li-name">학습</span>
+            <span className="eval-prog">수료기준 100% 이상 <b>{c.progress}%</b></span>
+          </div>
+          <div className="tree">
+            {c.offline ? (
+            <div className="content-row">
+              <span className="c-ico">📍</span>
+              <div className="c-info">
+                <div className="c-name">{c.name} <span className="c-need">{Math.max(0, c.attend_req - c.attend_done)}회 더 출석 필요!</span></div>
+                <div className="c-meta">오프라인 {c.sessions}회 · 출석 {c.attend_done}회</div>
+              </div>
+              <button className="c-btn">일정 보기 ›</button>
+            </div>
+            ) : (
+            <>
+            <div className="t-grp">▾ Vibe 코딩 개론 및 도구 <span className="cnt">2</span></div>
+            <div className="t-sub">▾ 바이브 코딩 및 과정 소개 <span className="cnt">1</span></div>
+            <div className="content-row">
+              <span className="c-ico">▶</span>
+              <div className="c-info"><div className="c-name">바이브 코딩으로 게임 만들기 {!isPending && <span className="c-need">17분 더 학습 필요!</span>}</div>
+                <div className="c-meta">동영상 18분 33초 · 진행률 {isPending?0:c.progress}%</div></div>
+              <button className={`c-btn ${isPending?'wait':''}`}>{isPending?'학습대기':'학습하기 ›'}</button>
+            </div>
+            <div className="t-sub">▾ Cursor 소개 및 바이브 코딩 방법 <span className="cnt">1</span></div>
+            <div className="content-row">
+              <span className="c-ico">▶</span>
+              <div className="c-info"><div className="c-name">바이브 코딩과 커서 활용법</div>
+                <div className="c-meta">동영상 7분 9초 · 진행률 0%</div></div>
+              <button className={`c-btn ${isPending?'wait':''}`}>{isPending?'학습대기':'학습하기 ›'}</button>
+            </div>
+            </>
+            )}
+          </div>
+        </div>
+        {c.offline && (
+        <div className="eval-item" style={{marginTop:14}}>
+          <div className="eval-head">
+            <span className="li-badge opt">자율학습</span><span className="li-name">과제</span>
+            <span className="eval-prog">과제 <b style={{color:'#999'}}>0%</b></span>
+          </div>
+          <div className="tree">
+            <div className="content-row">
+              <span className="c-ico">📝</span>
+              <div className="c-info">
+                <div className="c-name">실습 과제 제출</div>
+                <div className="c-meta">과제 1개 · 제출 0개</div>
+              </div>
+              <button className="c-btn">과제 제출 ›</button>
+            </div>
+          </div>
+        </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DetailPanel({ c, onClose }) {
+  const learnLabel = c.state==='soon'?'학습예정':c.state==='review'?'복습가능':(c.state==='done'||c.state==='fail')?'완료':'학습중';
+  const passLabel = c.state==='done'?'수료':'미수료';
+  // 데모 성적표 데이터
+  const rows = [
+    { name:'평가명1', req:'필수', weight:'50%', crit:'80%이상', rate:'80%', score:'40점', highlight:true },
+    { name:'평가명1', req:'필수', weight:'50%', crit:'80%이상', rate:'80%', score:'40점', highlight:true },
+    { name:'평가명1', req:'필수', weight:'50%', crit:'80%이상', rate:'80%', score:'40점' },
+    { name:'평가명1', req:'-', weight:'50%', crit:'80%이상', rate:'80%', score:'40점' },
+  ];
+  return (
+    <div className="detail-panel">
+      <div className="dp-head"><h3>학습현황</h3><button className="dp-close" onClick={onClose}>×</button></div>
+
+        {/* 상단 3박스 */}
+        <div className="dp-top">
+          <div className="dp-box"><div className="l">학습상태</div><div className="v">{learnLabel}</div></div>
+          <div className="dp-box"><div className="l">수료여부</div><div className="v">{passLabel}</div></div>
+          <div className="dp-box"><div className="l">총 학습시간</div><div className="v">16.5 <small>시간</small></div></div>
+        </div>
+
+        {/* 콘텐츠 진척 2줄 */}
+        <div className="dp-prog-box">
+          <div className="dp-prog-title">필수 콘텐츠 <span>16개</span></div>
+          <div className="dp-bar"><i className="done" style={{width:'55%'}}></i><i className="ing" style={{width:'15%'}}></i></div>
+          <div className="dp-bar-foot"><b>20%</b><span>학습 완료 11　학습중 3　남은학습 2</span></div>
+        </div>
+        <div className="dp-prog-box">
+          <div className="dp-prog-title">전체 콘텐츠 <span>20개</span></div>
+          <div className="dp-bar"><i className="done" style={{width:'50%'}}></i><i className="ing" style={{width:'15%'}}></i></div>
+          <div className="dp-bar-foot"><b>10%</b><span>학습 완료 15　학습중 3　남은학습 2</span></div>
+        </div>
+
+        {/* 내 성적표 */}
+        <h4 className="dp-sec">내 성적표</h4>
+        <table className="dp-table">
+          <thead><tr><th>평가항목</th><th>필수</th><th>평가비중</th><th>수료기준</th><th>달성률/점수</th><th>획득점수</th></tr></thead>
+          <tbody>
+            {rows.map((r,i)=>(
+              <tr key={i}>
+                <td>{r.name}</td><td>{r.req}</td><td>{r.weight}</td><td>{r.crit}</td>
+                <td className={r.highlight?'hl-rate':''}>{r.rate}</td>
+                <td className={r.highlight?'hl-score':''}>{r.score}</td>
+              </tr>
+            ))}
+            <tr className="dp-total"><td>총점</td><td colSpan="3">80점 이상</td><td colSpan="2">56.6점</td></tr>
+          </tbody>
+        </table>
+    </div>
+  );
+}
+
+function App() {
+  const [selectedId, setSelectedId] = useState('c2'); // 진입 기본: 최근 학습 과정(잠정 A안)
+  const [startIdx, setStartIdx] = useState(0); // 카드 1개씩 이동
+  const [detailOpen, setDetailOpen] = useState(false); // 학습현황 상세 패널
+  const VISIBLE = 4; // 한 화면에 보이는 카드 수
+  const selected = COURSES.find(c=>c.id===selectedId);
+
+  const reqCourses = COURSES.filter(c=>c.required);
+  const reqDone = reqCourses.filter(c=>c.state==='done').length;
+  const reqFail = reqCourses.some(c=>c.state==='fail');
+  const allDone = reqDone === reqCourses.length;
+
+  const maxStart = Math.max(0, COURSES.length - VISIBLE);
+  const visibleCards = COURSES.slice(startIdx, startIdx + VISIBLE);
+
+  // 종합과정 기간 상태 (예정 / 학습중 / 종료) + 종료일 텍스트
+  const PKG_START = '2025.03.01';
+  const PKG_END = '2026.06.30';
+  const today = '2025.12.10'; // 데모 기준일
+  const pkgPeriod = today < PKG_START ? { type:'soon', label:'예정' }
+                  : today > PKG_END  ? { type:'ended', label:'종료' }
+                  : { type:'ing', label:'학습중', endText:`종료일 ${PKG_END}` };
+
+  // 종합 수료 표시
+  // - 필수 전부 수료: 즉시 '수료' 라벨
+  // - 종합 학습기간 종료 + 필수 미수료: '미수료' 라벨
+  // - 그 외(학습기간 내, 필수 미수료 존재): 안내 문구 (연장 등 여지로 미수료 확정 안 함)
+  let guideText, guideTone, guideIsLabel = false;
+  if (allDone) {
+    guideIsLabel = true; guideText = '수료'; guideTone = 'ok';
+  } else if (pkgPeriod.type === 'ended' && reqFail) {
+    guideIsLabel = true; guideText = '미수료'; guideTone = 'danger';
+  } else {
+    guideText = '필수 과정 모두 수료 필요!'; guideTone = '';
+  }
+
+  return (
+    <div className={`layout ${detailOpen?'panel-open':''}`}>
+      <div className="main-col">
+      <div className="back">← 돌아가기</div>
+      <div className="page-title">학습홈 <span style={{fontSize:14,color:'#888',fontWeight:500}}>(종합과정 프로토타입)</span></div>
+
+      {/* 종합 배너 (이미지 구조: 헤더 + 카드 내장 일체형) */}
+      <div className="pkg-banner">
+        <div className="pkg-head-left">
+          <div className="pkg-top">
+            <span className={`pkg-state-lbl ${pkgPeriod.type}`}>{pkgPeriod.label}</span>
+            <span className={`pkg-guide ${guideTone} ${guideIsLabel?'as-label':''}`}>{guideText}</span>
+          </div>
+          <div className="pkg-name">리더십 마스터 2026 종합과정</div>
+          <div className="pkg-metarow">
+            <div className="pkg-meta">
+              {pkgPeriod.type === 'ing' && <span className="pkg-endtext">{pkgPeriod.endText}</span>}
+              <span>전체과정 {COURSES.length}개</span>
+              <span>필수과정 {reqCourses.length}개 ({reqDone}/{reqCourses.length} 수료)</span>
+            </div>
+            {maxStart > 0 && (
+            <div className="pkg-nav">
+              <button className="nav-btn" onClick={()=>setStartIdx(i=>Math.max(0,i-1))} disabled={startIdx===0}>‹</button>
+              <button className="nav-btn" onClick={()=>setStartIdx(i=>Math.min(maxStart,i+1))} disabled={startIdx>=maxStart}>›</button>
+            </div>
+            )}
+          </div>
+        </div>
+
+        {/* 배너 내장 과정 카드 행 (페이지당 3개, 화살표로 전환) */}
+        <div className="card-row">
+          {visibleCards.map(c=>(
+            <CourseCard key={c.id} c={c} selected={c.id===selectedId} onSelect={setSelectedId} />
+          ))}
+        </div>
+      </div>
+
+      {/* 선택 과정 본문 (단과 동일) */}
+      <CourseBody c={selected} onOpenDetail={()=>setDetailOpen(true)} />
+      </div>
+
+      {/* 학습현황 상세 패널 (우측 push) */}
+      {detailOpen && <DetailPanel c={selected} onClose={()=>setDetailOpen(false)} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
